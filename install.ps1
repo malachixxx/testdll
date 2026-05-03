@@ -44,14 +44,18 @@ public class Injector {
 Add-Type -TypeDefinition $Source
 
 # 5. เริ่มกระบวนการ Inject
-$hProcess = [Injector]::OpenProcess(0x1F0FFF, $false, $targetProcess.Id) # All Access
+$hProcess = [Injector]::OpenProcess(0x1F0FFF, $false, $targetProcess.Id)
 $dllPathBytes = [System.Text.Encoding]::ASCII.GetBytes($tempPath)
-$allocMem = [Injector]::VirtualAllocEx($hProcess, [IntPtr]::Zero, [uint32]$dllPathBytes.Length, 0x3000, 0x40) # MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE
+$allocMem = [Injector]::VirtualAllocEx($hProcess, [IntPtr]::Zero, [uint32]$dllPathBytes.Length, 0x3000, 0x40)
 
-$out = [IntPtr]::Zero
-[Injector]::WriteProcessMemory($hProcess, $allocMem, $dllPathBytes, [uint32]$dllPathBytes.Length, out $out)
+# แก้ไขจุดนี้: ใช้ [ref] และตรวจสอบตัวแปร
+$bytesWritten = [IntPtr]::Zero
+$success = [Injector]::WriteProcessMemory($hProcess, $allocMem, $dllPathBytes, [uint32]$dllPathBytes.Length, [ref]$bytesWritten)
 
-$loadLibraryAddr = [Injector]::GetProcAddress([Injector]::GetModuleHandle("kernel32.dll"), "LoadLibraryA")
-[Injector]::CreateRemoteThread($hProcess, [IntPtr]::Zero, 0, $loadLibraryAddr, $allocMem, 0, [IntPtr]::Zero)
-
-Write-Host "Inject สำเร็จแล้ว!" -ForegroundColor Green
+if ($success) {
+    $loadLibraryAddr = [Injector]::GetProcAddress([Injector]::GetModuleHandle("kernel32.dll"), "LoadLibraryA")
+    [Injector]::CreateRemoteThread($hProcess, [IntPtr]::Zero, 0, $loadLibraryAddr, $allocMem, 0, [IntPtr]::Zero)
+    Write-Host "Inject สำเร็จแล้ว!" -ForegroundColor Green
+} else {
+    Write-Host "เขียน Memory ไม่สำเร็จ!" -ForegroundColor Red
+}
