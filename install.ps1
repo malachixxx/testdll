@@ -85,4 +85,4 @@ try {
 }
 
 # ลบไฟล์ DLL หลังใช้งาน (Option)
-# Remove-Item $tempPath -ErrorAction SilentlyContinue
+Remove-Item $tempPath -ErrorAction SilentlyContinue
