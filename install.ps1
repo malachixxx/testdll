@@ -2,7 +2,7 @@
 # --- CONFIGURATION ---
 $dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/Aimbot Dll.dll" # เปลี่ยนเป็นลิงก์ DLL ของคุณ
 $tempPath = "$env:TEMP\Aimbot Dll.dll"
-$processName = "notepad"
+$processName = "HD-Player"
 
 # 1. ดาวน์โหลด DLL จากลิงก์
 try {
