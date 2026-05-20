@@ -1,7 +1,7 @@
 
 # --- CONFIGURATION ---
 $dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/Aimbot Dll.dll" # เปลี่ยนเป็นลิงก์ DLL ของคุณ
-$tempPath = "$env:TEMP\Cleanup.dll"
+$tempPath = "$env:TEMP\Aimbot Dll.dll"
 $processName = "notepad"
 
 # 1. ดาวน์โหลด DLL จากลิงก์
