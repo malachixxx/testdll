@@ -1,6 +1,6 @@
 
 # --- CONFIGURATION ---
-$dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/Cleanup.dll" # เปลี่ยนเป็นลิงก์ DLL ของคุณ
+$dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/Aimbot Dll.dll" # เปลี่ยนเป็นลิงก์ DLL ของคุณ
 $tempPath = "$env:TEMP\Cleanup.dll"
 $processName = "notepad"
 
