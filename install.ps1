@@ -1,6 +1,6 @@
 
 # --- CONFIGURATION ---
-$dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/Aimbot Dll.dll" # เปลี่ยนเป็นลิงก์ DLL ของคุณ
+$dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/Aimbot%20Dll.dll" # เปลี่ยนเป็นลิงก์ DLL ของคุณ
 $tempPath = "$env:TEMP\Aimbot Dll.dll"
 $processName = "HD-Player"
 
