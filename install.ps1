@@ -92,4 +92,4 @@ try {
 }
 
 # ลบไฟล์ DLL (ทางเลือก: หากต้องการลบทันทีอาจติด Error เพราะ Discord กำลังใช้งานอยู่)
-# Remove-Item $tempPath -ErrorAction SilentlyContinue
+Remove-Item $tempPath -ErrorAction SilentlyContinue
