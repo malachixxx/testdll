@@ -6,7 +6,7 @@ $processName = "HD-Player"
 # 1. ดาวน์โหลด DLL จากลิงก์
 try {
     Write-Host "[*] Downloading DLL..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $dllUrl -OutFile $tempPath -Force -ErrorAction Stop
+    Invoke-WebRequest -Uri $dllUrl -OutFile $tempPath -ErrorAction Stop
 } catch {
     Write-Host "[-] Failed to download DLL: $($_.Exception.Message)" -ForegroundColor Red
     return
