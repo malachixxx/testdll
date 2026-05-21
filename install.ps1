@@ -1,6 +1,6 @@
 # --- CONFIGURATION ---
-$dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/dbghelp.dll" 
-$tempPath = "$env:TEMP\dbghelp.dll"
+$dllUrl = "https://raw.githubusercontent.com/malachixxx/testdll/main/Aimbot%20Dll.dll" 
+$tempPath = "$env:TEMP\Aimbot Dll.dll"
 $processName = "HD-Player"
 
 # 1. ดาวน์โหลด DLL จากลิงก์
