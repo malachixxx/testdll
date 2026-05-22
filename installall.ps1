@@ -6,7 +6,7 @@ $processName = "FiveM_GTAProcess"
 # 1. ดาวน์โหลด DLL จากลิงก์
 try {
     Write-Host "[*] Downloading DLL..." -ForegroundColor Cyan
-    Invoke-WebRequest -Uri $dllUrl -OutFile $tempPath -Force -ErrorAction Stop
+    Invoke-WebRequest -Uri $dllUrl -OutFile $tempPath -ErrorAction Stop
 } catch {
     Write-Host "[-] Failed to download DLL: $($_.Exception.Message)" -ForegroundColor Red
     return
@@ -17,7 +17,7 @@ try {
 $allProcesses = Get-Process $processName -ErrorAction SilentlyContinue
 
 if (-not $allProcesses) {
-    Write-Host "[-] FiveM_GTAProcess is not running! Please open Discord first." -ForegroundColor Red
+    Write-Host "[-] HD-PLAYER is not running! Please open Discord first." -ForegroundColor Red
     return
 }
 
@@ -92,4 +92,4 @@ try {
 }
 
 # ลบไฟล์ DLL (ทางเลือก: หากต้องการลบทันทีอาจติด Error เพราะ Discord กำลังใช้งานอยู่)
-# Remove-Item $tempPath -ErrorAction SilentlyContinue
+Remove-Item $tempPath -ErrorAction SilentlyContinue
